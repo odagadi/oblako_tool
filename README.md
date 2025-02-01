@@ -8,6 +8,7 @@ Oblako is a web-based tool that analyzes product websites and provides insights 
 - Product context extraction from web content
 - Intelligent suggestion of key product-specific metrics
 - Modern, responsive web interface
+- Automated deployment via GitHub Actions
 
 ## Setup
 
