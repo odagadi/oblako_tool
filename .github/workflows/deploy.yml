@@ -15,14 +15,21 @@ jobs:
       uses: shimataro/ssh-key-action@v2
       with:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+        name: id_rsa # optional
+        known_hosts: unnecessary
+        if_key_exists: replace
+        config: |
+          Host *
+            StrictHostKeyChecking no
         
-    - name: Adding Known Hosts
-      run: ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-
-    - name: Deploy with rsync
+    - name: Fix permissions
       run: |
-        ssh ubuntu@${{ secrets.SERVER_HOST }} '
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy with direct SSH
+      run: |
+        ssh -v -i ~/.ssh/id_rsa ubuntu@${{ secrets.SERVER_HOST }} '
           cd /var/www/oblako && \
           sudo -u www-data git fetch origin && \
           sudo -u www-data git reset --hard origin/main && \
