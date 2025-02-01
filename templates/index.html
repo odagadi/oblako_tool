@@ -71,33 +71,12 @@
         loading: false,
         error: null,
         currentStep: '',
-        loadingSteps: [
-            '🧙‍♂️ Summoning the analysis wizards...',
-            '🎩 Pulling metrics out of the magic hat...',
-            '🪄 Casting the data analysis spell...',
-            '✨ Sprinkling some AI fairy dust...'
-        ],
-        stepIndex: 0,
-        
-        startLoading() {
-            this.loading = true;
-            this.stepIndex = 0;
-            this.updateStep();
-        },
-
-        updateStep() {
-            if (this.loading) {
-                this.currentStep = this.loadingSteps[this.stepIndex];
-                this.stepIndex = (this.stepIndex + 1) % this.loadingSteps.length;
-                setTimeout(() => this.updateStep(), 2000);
-            }
-        },
         
         analyzeProduct() {
             this.startLoading();
             this.error = null;
             this.result = null;
-
+            
             fetch('/analyze', {
                 method: 'POST',
                 headers: {
@@ -107,18 +86,38 @@
             })
             .then(response => response.json())
             .then(data => {
-                this.loading = false;
-                if (data.error) {
-                    this.error = data.error;
+                if (data.result.error === 'not_product_company') {
+                    this.error = data.result.message;
+                    this.result = null;
                 } else {
                     this.result = data.result;
+                    this.error = null;
                 }
             })
             .catch(error => {
+                this.error = 'An error occurred while analyzing the URL. Please try again.';
+            })
+            .finally(() => {
                 this.loading = false;
-                this.error = 'An error occurred while analyzing the URL.';
-                console.error(error);
+                this.currentStep = '';
             });
+        },
+        
+        startLoading() {
+            this.loading = true;
+            this.currentStep = 'Validating if this is a product company website...';
+            
+            setTimeout(() => {
+                if (this.loading) {
+                    this.currentStep = 'Analyzing website content and determining key metrics...';
+                }
+            }, 2000);
+            
+            setTimeout(() => {
+                if (this.loading) {
+                    this.currentStep = 'Generating detailed metric explanations...';
+                }
+            }, 4000);
         }
     }" class="min-h-screen">
         <!-- Header -->
@@ -155,17 +154,15 @@
                     </div>
                 </div>
 
-                <!-- Loading Animation -->
-                <div x-show="loading" class="mt-8 flex flex-col items-center justify-center">
-                    <lottie-player
-                        src="https://assets2.lottiefiles.com/packages/lf20_kq5rGs.json"
-                        background="transparent"
-                        speed="1"
-                        style="width: 300px; height: 300px;"
-                        loop
-                        autoplay>
-                    </lottie-player>
-                    <div class="mt-4 text-lg font-medium text-indigo-600" x-text="currentStep"></div>
+                <!-- Loading State -->
+                <div x-show="loading" class="mt-8 flex flex-col items-center justify-center space-y-4">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                    <p class="text-gray-600" x-text="currentStep"></p>
+                </div>
+
+                <!-- Error Message -->
+                <div x-show="error" class="mt-8 p-4 bg-red-50 rounded-lg">
+                    <p class="text-red-700" x-text="error"></p>
                 </div>
 
                 <!-- Results Section -->
@@ -209,11 +206,6 @@
                             </template>
                         </div>
                     </div>
-                </div>
-
-                <!-- Error Message -->
-                <div x-show="error" class="mt-4 bg-red-50 p-4 rounded-lg">
-                    <p x-text="error" class="text-sm text-red-700"></p>
                 </div>
             </div>
         </main>

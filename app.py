@@ -95,6 +95,25 @@ Explanation: [general explanation of the metric]"""
             'tooltip': f'Explanation of {metric_name} not available'
         }
 
+def is_product_company(soup, text_content):
+    # Keywords that indicate a product company
+    product_keywords = [
+        'pricing', 'features', 'product', 'platform', 'trial',
+        'download', 'subscribe', 'software', 'app', 'solution',
+        'dashboard', 'integration', 'api', 'signup', 'demo'
+    ]
+    
+    # Check meta tags
+    meta_tags = soup.find_all('meta', attrs={'name': ['description', 'keywords']})
+    meta_content = ' '.join([tag.get('content', '').lower() for tag in meta_tags])
+    
+    # Check for keywords in text and meta content
+    text_content = text_content.lower()
+    keyword_count = sum(1 for keyword in product_keywords if keyword in text_content or keyword in meta_content)
+    
+    # If we find at least 3 product-related keywords, consider it a product company
+    return keyword_count >= 3
+
 def analyze_website(url):
     try:
         response = requests.get(url)
@@ -102,6 +121,13 @@ def analyze_website(url):
         
         # Extract text content
         text_content = ' '.join([p.get_text() for p in soup.find_all(['p', 'h1', 'h2', 'h3', 'title'])])
+        
+        # Check if it's a product company
+        if not is_product_company(soup, text_content):
+            return {
+                'error': 'not_product_company',
+                'message': f'This tool is designed for product companies. It looks like {url} might be a service-based company or not a product website. Try a product-based URL.'
+            }
         
         # Use OpenAI to analyze the content
         analysis_prompt = f"""Based on this website content, provide a structured analysis with exactly these components:
