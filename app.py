@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import openai
 import re
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -193,6 +194,67 @@ Note: For metrics, provide specific, measurable metrics that directly relate to 
     except Exception as e:
         return str(e)
 
+# Common domains and popular websites for suggestions
+POPULAR_DOMAINS = ['.com', '.org', '.net', '.io', '.co', '.app']
+POPULAR_WEBSITES = [
+    {'name': 'Slack', 'domain': 'slack.com'},
+    {'name': 'GitHub', 'domain': 'github.com'},
+    {'name': 'Notion', 'domain': 'notion.so'},
+    {'name': 'Figma', 'domain': 'figma.com'},
+    {'name': 'Dropbox', 'domain': 'dropbox.com'},
+    {'name': 'Zoom', 'domain': 'zoom.us'},
+    {'name': 'Linear', 'domain': 'linear.app'},
+    {'name': 'Asana', 'domain': 'asana.com'},
+    {'name': 'Trello', 'domain': 'trello.com'},
+    {'name': 'Jira', 'domain': 'atlassian.com'},
+    {'name': 'Monday', 'domain': 'monday.com'},
+    {'name': 'Miro', 'domain': 'miro.com'}
+]
+
+def get_url_suggestions(query):
+    query = query.lower().strip()
+    if not query:
+        return []
+        
+    suggestions = []
+    
+    # If query doesn't have a dot, suggest domain extensions
+    if '.' not in query:
+        # Suggest domain extensions
+        for domain in POPULAR_DOMAINS:
+            suggestions.append({
+                'url': f'https://{query}{domain}',
+                'displayText': f'{query}{domain}'
+            })
+            
+        # Suggest matching popular websites
+        for site in POPULAR_WEBSITES:
+            if query in site['name'].lower() or query in site['domain'].lower():
+                suggestions.append({
+                    'url': f'https://{site["domain"]}',
+                    'displayText': f'{site["name"]} ({site["domain"]})'
+                })
+    else:
+        # If query has a dot, suggest only matching popular websites
+        base_query = query.split('.')[0]
+        for site in POPULAR_WEBSITES:
+            if (base_query in site['name'].lower() or 
+                base_query in site['domain'].lower() or 
+                query in site['domain'].lower()):
+                suggestions.append({
+                    'url': f'https://{site["domain"]}',
+                    'displayText': f'{site["name"]} ({site["domain"]})'
+                })
+                
+        # Also suggest the query itself with different protocols
+        if not query.startswith(('http://', 'https://')):
+            suggestions.insert(0, {
+                'url': f'https://{query}',
+                'displayText': query
+            })
+    
+    return suggestions[:5]  # Return top 5 suggestions
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -205,6 +267,15 @@ def analyze():
     
     result = analyze_website(url)
     return jsonify({'result': result})
+
+@app.route('/suggest', methods=['GET'])
+def suggest():
+    query = request.args.get('q', '').lower()
+    if not query or len(query) < 2:
+        return jsonify([])
+        
+    suggestions = get_url_suggestions(query)
+    return jsonify(suggestions)
 
 if __name__ == '__main__':
     app.run(debug=True)
