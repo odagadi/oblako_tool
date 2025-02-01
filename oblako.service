@@ -1,0 +1,15 @@
+[Unit]
+Description=Oblako Product Analytics Tool
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/oblako
+Environment="PATH=/var/www/oblako/venv/bin"
+EnvironmentFile=/var/www/oblako/.env
+ExecStart=/var/www/oblako/venv/bin/gunicorn -c gunicorn_config.py app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

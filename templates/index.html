@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oblako - Product Analytics Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <style>
+        .tooltip {
+            position: relative;
+        }
+        .tooltip-content {
+            visibility: hidden;
+            position: absolute;
+            z-index: 10;
+            width: 300px;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px;
+            border-radius: 12px;
+            background-color: #1a1a1a;
+            color: white;
+            text-align: left;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1a1a1a transparent transparent transparent;
+        }
+        .metric-icon {
+            transition: transform 0.2s;
+        }
+        .tooltip:hover .metric-icon {
+            transform: scale(1.1);
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            transform: translateY(-2px);
+        }
+        .metric-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div x-data="{
+        url: '',
+        result: null,
+        loading: false,
+        error: null,
+        currentStep: '',
+        loadingSteps: [
+            '🧙‍♂️ Summoning the analysis wizards...',
+            '🎩 Pulling metrics out of the magic hat...',
+            '🪄 Casting the data analysis spell...',
+            '✨ Sprinkling some AI fairy dust...'
+        ],
+        stepIndex: 0,
+        
+        startLoading() {
+            this.loading = true;
+            this.stepIndex = 0;
+            this.updateStep();
+        },
+
+        updateStep() {
+            if (this.loading) {
+                this.currentStep = this.loadingSteps[this.stepIndex];
+                this.stepIndex = (this.stepIndex + 1) % this.loadingSteps.length;
+                setTimeout(() => this.updateStep(), 2000);
+            }
+        },
+        
+        analyze() {
+            this.startLoading();
+            this.error = null;
+            this.result = null;
+
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: this.url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.loading = false;
+                if (data.error) {
+                    this.error = data.error;
+                } else {
+                    this.result = data.result;
+                }
+            })
+            .catch(error => {
+                this.loading = false;
+                this.error = 'An error occurred while analyzing the URL.';
+                console.error(error);
+            });
+        }
+    }" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-indigo-600 shadow-sm">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">Oblako</h1>
+                        <p class="mt-1 text-sm text-indigo-100">Product Analytics Intelligence Tool</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-white">All Project Data</span>
+                        <div class="bg-indigo-500 rounded-lg px-3 py-1">
+                            <span class="text-sm text-white">B2B/SaaS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- URL Input Form -->
+            <div class="card p-6 mb-8">
+                <div class="max-w-3xl mx-auto">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-1">
+                            <input type="url" x-model="url" id="url" 
+                                class="block w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                placeholder="Enter product URL to analyze">
+                        </div>
+                        <button @click="analyze()" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            :disabled="loading">
+                            <span x-show="!loading">Analyze Product</span>
+                            <span x-show="loading">Analyzing...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading Animation -->
+                <div x-show="loading" class="mt-8 flex flex-col items-center justify-center">
+                    <lottie-player
+                        src="https://assets2.lottiefiles.com/packages/lf20_kq5rGs.json"
+                        background="transparent"
+                        speed="1"
+                        style="width: 300px; height: 300px;"
+                        loop
+                        autoplay>
+                    </lottie-player>
+                    <div class="mt-4 text-lg font-medium text-indigo-600" x-text="currentStep"></div>
+                </div>
+
+                <!-- Results Section -->
+                <div x-show="result" class="mt-8 space-y-8">
+                    <!-- Business Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="card p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Business Type</h3>
+                            <p class="text-gray-700" x-text="result.business_type"></p>
+                        </div>
+                        <div class="card p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Product Description</h3>
+                            <p class="text-gray-700" x-text="result.description"></p>
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Product Metrics</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <template x-for="metric in result.metrics" :key="metric.name">
+                                <div class="card metric-card p-6">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2">
+                                                <h4 class="text-base font-medium text-gray-900" x-text="metric.name"></h4>
+                                                <div class="tooltip">
+                                                    <svg class="h-5 w-5 text-gray-400 metric-icon cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    <div class="tooltip-content">
+                                                        <div class="font-medium mb-1">About this metric:</div>
+                                                        <div class="text-sm" x-text="metric.tooltip"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="mt-2 text-sm text-gray-600" x-text="metric.example"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div x-show="error" class="mt-4 bg-red-50 p-4 rounded-lg">
+                    <p x-text="error" class="text-sm text-red-700"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
